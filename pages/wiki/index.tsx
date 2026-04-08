@@ -1,5 +1,6 @@
 import { GetStaticProps } from 'next';
 import Head from 'next/head';
+import ErrorBoundary from '@/components/error-boundary';
 import WikiLayout from '@/components/wiki/wiki-layout';
 import WikiIndex from '@/components/wiki/wiki-index';
 import { getAllArticles } from '@/utils/wiki-loader';
@@ -17,7 +18,9 @@ export default function WikiHome({ articles }: WikiHomeProps) {
         <meta name="robots" content="noindex" />
       </Head>
       <WikiLayout isIndex articles={articles}>
-        <WikiIndex articles={articles} />
+        <ErrorBoundary>
+          <WikiIndex articles={articles} />
+        </ErrorBoundary>
       </WikiLayout>
     </>
   );

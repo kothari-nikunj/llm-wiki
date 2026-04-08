@@ -158,6 +158,7 @@ const ArticleBody = styled.div`
     }
   }
 
+  /* Override global .markdown a styles within wiki */
   a::before, a::after {
     display: none !important;
   }

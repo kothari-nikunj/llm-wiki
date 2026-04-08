@@ -3,6 +3,7 @@ import { GetStaticPaths, GetStaticProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import styled from 'styled-components';
+import ErrorBoundary from '@/components/error-boundary';
 import WikiLayout from '@/components/wiki/wiki-layout';
 import WikiArticleView from '@/components/wiki/wiki-article';
 import WikiMargin from '@/components/wiki/wiki-toc';
@@ -65,12 +66,14 @@ export default function WikiArticlePage({ article, articles }: WikiArticlePagePr
           {' / '}
           {article.title}
         </Crumbs>
-        <ArticleGrid>
-          <ArticleContent ref={contentRef}>
-            <WikiArticleView article={article} />
-          </ArticleContent>
-          <WikiMargin article={article} contentRef={contentRef} />
-        </ArticleGrid>
+        <ErrorBoundary>
+          <ArticleGrid>
+            <ArticleContent ref={contentRef}>
+              <WikiArticleView article={article} />
+            </ArticleContent>
+            <WikiMargin article={article} contentRef={contentRef} />
+          </ArticleGrid>
+        </ErrorBoundary>
       </WikiLayout>
     </>
   );

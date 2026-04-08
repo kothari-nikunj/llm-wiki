@@ -156,6 +156,30 @@ const SidebarLink = styled.a<{ $active?: boolean }>`
   }
 `;
 
+const SidebarFooter = styled.div`
+  margin-top: auto;
+  padding: 14px 20px;
+  border-top: 1px solid #f0f0ee;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  a {
+    font-size: 11px;
+    color: #c4c4c0;
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: #0080ff;
+  }
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+
 const MainContent = styled.main`
   flex: 1;
   min-width: 0;
@@ -165,6 +189,17 @@ const MainContent = styled.main`
     padding: 20px 16px 40px;
   }
 `;
+
+const CATEGORIES = [
+  { slug: 'companies', label: 'Companies' },
+  { slug: 'concepts', label: 'Concepts' },
+  { slug: 'eras', label: 'Eras' },
+  { slug: 'interests', label: 'Interests' },
+  { slug: 'patterns', label: 'Patterns' },
+  { slug: 'people', label: 'People' },
+  { slug: 'philosophies', label: 'Philosophies' },
+  { slug: 'strategies', label: 'Strategies' },
+];
 
 interface WikiLayoutProps {
   children: ReactNode;
@@ -177,17 +212,8 @@ export default function WikiLayout({ children, articles = [], isIndex }: WikiLay
   const currentSlug = router.asPath.replace('/wiki/', '');
   const [query, setQuery] = useState('');
 
-  const directories = useMemo(() => {
-    const dirs = new Set<string>();
-    for (const a of articles) {
-      if (a.directory) dirs.add(a.directory);
-    }
-    return Array.from(dirs).sort().map((d) => ({
-      slug: d,
-      label: d.charAt(0).toUpperCase() + d.slice(1),
-    }));
-  }, [articles]);
-
+  // On index page, collapse all categories by default (main content shows them)
+  // On article pages, expand only the active category
   const activeDir = useMemo(() => {
     if (isIndex) return '';
     const match = articles.find((a) => currentSlug === a.slug);
@@ -196,10 +222,12 @@ export default function WikiLayout({ children, articles = [], isIndex }: WikiLay
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
     if (isIndex) {
-      return Object.fromEntries(directories.map((c, i) => [c.slug, i !== 0]));
+      // First category open, rest collapsed on index
+      return Object.fromEntries(CATEGORIES.map((c, i) => [c.slug, i !== 0]));
     }
+    // On article pages, collapse all except active category
     return Object.fromEntries(
-      directories.map((c) => [c.slug, c.slug !== activeDir])
+      CATEGORIES.map((c) => [c.slug, c.slug !== activeDir])
     );
   });
 
@@ -211,7 +239,7 @@ export default function WikiLayout({ children, articles = [], isIndex }: WikiLay
       )
     : articles;
 
-  const grouped = directories.map((cat) => ({
+  const grouped = CATEGORIES.map((cat) => ({
     ...cat,
     items: filteredArticles
       .filter((a) => a.directory === cat.slug)
@@ -235,7 +263,7 @@ export default function WikiLayout({ children, articles = [], isIndex }: WikiLay
           <Link href="/wiki" passHref legacyBehavior>
             <SidebarTitle>Wiki</SidebarTitle>
           </Link>
-          <ShuffleBtn onClick={goToRandom} title="Random article">Random</ShuffleBtn>
+          <ShuffleBtn onClick={goToRandom} title="Random article">🔀</ShuffleBtn>
         </SidebarHeader>
         <SidebarSearch
           type="text"
@@ -261,6 +289,9 @@ export default function WikiLayout({ children, articles = [], isIndex }: WikiLay
             </CategoryItems>
           </CategoryGroup>
         ))}
+        <SidebarFooter>
+          <Link href="/">&larr; Back</Link>
+        </SidebarFooter>
       </Sidebar>
       <MainContent>{children}</MainContent>
     </Shell>

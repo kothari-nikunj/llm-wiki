@@ -1,5 +1,5 @@
-import { readFileSync, readdirSync, existsSync } from 'fs';
-import { join, relative, basename } from 'path';
+import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
+import { join, relative, basename, extname } from 'path';
 import matter from 'gray-matter';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
@@ -12,12 +12,14 @@ import type { WikiArticle, WikiIndexEntry } from '@/types/wiki';
 const WIKI_DIR = join(process.cwd(), 'wiki');
 const BACKLINKS_PATH = join(WIKI_DIR, '_backlinks.json');
 
+// gray-matter parses YAML dates as Date objects; convert to strings for JSON serialization
 function toDateString(val: unknown): string {
   if (!val) return '';
   if (val instanceof Date) return val.toISOString().split('T')[0];
   return String(val);
 }
 
+// Files to skip when scanning for articles
 const SKIP_FILES = new Set(['_index.md', '_backlinks.json', '_absorb_log.json']);
 
 function getWikiFiles(dir: string): string[] {
@@ -45,6 +47,8 @@ function slugToFilePath(slug: string): string {
   return join(WIKI_DIR, `${slug}.md`);
 }
 
+// Transform [[wikilinks]] to HTML links
+// Supports both [[slug]] and [[slug|Display Text]] formats
 function transformWikilinks(markdown: string): string {
   return markdown.replace(/\[\[([^\]]+)\]\]/g, (_match, link: string) => {
     const parts = link.split('|');
@@ -55,6 +59,7 @@ function transformWikilinks(markdown: string): string {
 }
 
 async function compileMarkdown(content: string): Promise<string> {
+  // Transform wikilinks before processing
   const transformed = transformWikilinks(content);
 
   const result = await unified()
@@ -74,10 +79,12 @@ function estimateReadingTime(content: string): number {
 }
 
 function extractSummary(content: string): string {
+  // Get first non-empty, non-heading line
   const lines = content.split('\n');
   for (const line of lines) {
     const trimmed = line.trim();
     if (trimmed && !trimmed.startsWith('#') && !trimmed.startsWith('---')) {
+      // Strip wikilink syntax: [[path|Label]] -> Label, [[path]] -> path
       let clean = trimmed.replace(/\[\[([^\]]*?\|)?([^\]]+)\]\]/g, '$2');
       clean = clean.length > 120 ? clean.slice(0, 117) + '...' : clean;
       return clean;
@@ -137,6 +144,7 @@ export function getAllArticles(): WikiIndexEntry[] {
     });
   }
 
+  // Sort by last_updated descending
   articles.sort((a, b) => {
     if (!a.last_updated) return 1;
     if (!b.last_updated) return -1;

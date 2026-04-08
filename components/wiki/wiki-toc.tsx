@@ -13,7 +13,7 @@ const MarginColumn = styled.aside`
   font-size: 12px;
   color: #9b9a97;
   line-height: 1.5;
-  align-self: stretch;
+  position: relative;
 
   @media (max-width: 1100px) {
     margin-top: 32px;
@@ -23,11 +23,22 @@ const MarginColumn = styled.aside`
 `;
 
 const MarginSticky = styled.div`
-  position: sticky;
-  top: 32px;
+  position: fixed;
+  width: 180px;
+  top: 50%;
+  transform: translateY(-50%);
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 
   @media (max-width: 1100px) {
     position: static;
+    width: auto;
+    max-height: none;
   }
 `;
 
@@ -99,6 +110,7 @@ function parseWikilink(link: string): { slug: string; label: string } {
   if (parts.length > 1) {
     return { slug, label: parts[1].trim() };
   }
+  // No explicit label — derive from slug: "people/some-person" -> "Some Person"
   const name = slug.split('/').pop() || slug;
   const label = name.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   return { slug, label };
