@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# next.js
+.next/
+out/
+
+# env
+.env.local
+.env*.local
+
+# data (user's raw source files)
+data/writing/*.md
+data/writing/*.epub
+data/tweets/*.js
+data/tweets/*.json
+
+# generated content
+raw/entries/*.md
+outputs/*.md
+wiki/**/*.md
+wiki/_*.json
+
+# misc
+.DS_Store
+*.tsbuildinfo
+next-env.d.ts
