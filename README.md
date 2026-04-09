@@ -223,6 +223,29 @@ python3 ingest_calendar.py --days 90
 
 Events include title, date/time, location, attendees, and description. Calendar entries are low priority in the source hierarchy -- they provide timeline context, not insight.
 
+**Any Document (PDF, PPTX, DOCX, XLSX, EPUB, Images, Audio, YouTube...)**
+
+Universal document ingest via [Microsoft MarkItDown](https://github.com/microsoft/markitdown). Drop any supported file into `data/documents/` and run:
+
+```bash
+# Install MarkItDown
+pip install 'markitdown[all]'
+
+# Ingest all documents in data/documents/
+python3 ingest_documents.py
+
+# Ingest a single file
+python3 ingest_documents.py --file ~/Documents/whitepaper.pdf
+
+# Ingest with OCR for images in documents (needs OpenAI key)
+python3 ingest_documents.py --ocr
+
+# Ingest a YouTube video transcript
+python3 ingest_documents.py --youtube "https://youtube.com/watch?v=dQw4w9WgXcQ"
+```
+
+Supported formats: PDF, PowerPoint, Word, Excel, Images (EXIF + OCR), Audio (transcription), HTML, CSV, JSON, XML, ZIP, EPUB, YouTube URLs. MarkItDown preserves document structure (headings, tables, lists) as clean Markdown.
+
 **Anything else:**
 The wiki skill is designed to handle unknown formats. Drop your data in `data/`, run `/wiki ingest`, and Claude will figure out the structure and write a parser.
 
@@ -467,6 +490,9 @@ Not all data sources are equal. The absorb step weights them differently:
 | 2 | **Tweets** (original, not replies/RTs) | Well-formed but short public thoughts | Clusters by theme. Extends ideas from writing. Standalone articles only for ideas not written up elsewhere. |
 | 3 | **Bookmarks** | Interest signals, not your own thinking | Reveals what topics pull your attention. Updates existing articles with "what you follow." Never creates per-bookmark articles. |
 | 4 | **Messages** (iMessage, WhatsApp) | Raw, unfiltered, highest noise | Highly selective. Only patterns that repeat or moments that mattered. A lunch plan is noise. A 2am career conversation is signal. |
+| 5 | **Documents** (PDF, PPTX, DOCX, etc.) | Formal, structured, external | Reference material. Enriches existing articles with facts and context. Rarely creates standalone articles unless the document is deeply personal. |
+| 6 | **Gmail** | Real commitments, relationship context | Extends people pages and project timelines. Communication patterns over content. |
+| 7 | **Calendar** | Events timeline, meeting patterns | Updates chronology. Lowest signal -- provides when, not what or why. |
 
 ## Absorb Strategy
 

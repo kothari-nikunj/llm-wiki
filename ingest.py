@@ -234,6 +234,17 @@ def main():
     total += ingest_tweets()
     total += ingest_bookmarks()
 
+    # Document ingest via markitdown (if available and data/documents/ exists)
+    documents_dir = ROOT / "data" / "documents"
+    if documents_dir.exists():
+        try:
+            from ingest_documents import ingest_directory
+            total += ingest_directory(documents_dir)
+        except ImportError:
+            print("  Documents: skipped (markitdown not installed)")
+    else:
+        print("  Documents: skipped (no data/documents/ found)")
+
     print()
     print(f"Total: {total} entries written to raw/entries/")
 
