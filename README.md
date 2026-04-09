@@ -30,7 +30,7 @@ The brain is a Claude Code skill (`.claude/skills/wiki/SKILL.md`). It tells Clau
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/llm-wiki.git
+git clone https://github.com/kothari-nikunj/llm-wiki.git
 cd llm-wiki
 npm install
 ```
