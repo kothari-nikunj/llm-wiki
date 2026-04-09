@@ -189,6 +189,40 @@ Drop `.epub` files into `data/writing/`. The wiki skill handles extraction -- wh
 **Apple Notes:**
 Export your notes as `.txt` or `.html` files and drop them in `data/writing/`.
 
+**Gmail**
+
+Ingest email messages as wiki entries. Requires Google OAuth credentials (see script for setup):
+
+```bash
+# Install dependencies
+pip install google-auth-oauthlib google-api-python-client
+
+# First-time auth (opens browser)
+python3 ingest_gmail.py --auth
+
+# Ingest last 30 days (default)
+python3 ingest_gmail.py
+
+# Custom query
+python3 ingest_gmail.py --query "from:boss" --days 90
+```
+
+Each email becomes an entry with sender, subject, date, and body text. The absorb step treats emails as relationship and commitment signals, not raw content to reproduce.
+
+**Google Calendar**
+
+Ingest calendar events as wiki entries. Shares OAuth credentials with Gmail:
+
+```bash
+# Ingest last 30 days of events
+python3 ingest_calendar.py
+
+# Ingest last 90 days
+python3 ingest_calendar.py --days 90
+```
+
+Events include title, date/time, location, attendees, and description. Calendar entries are low priority in the source hierarchy -- they provide timeline context, not insight.
+
 **Anything else:**
 The wiki skill is designed to handle unknown formats. Drop your data in `data/`, run `/wiki ingest`, and Claude will figure out the structure and write a parser.
 
@@ -629,6 +663,115 @@ The iMessage script resolves names using the macOS Address Book database. If con
 | iMessages | `~/Library/Messages/chat.db` | macOS system path |
 | WhatsApp | `~/Library/Group Containers/group.net.whatsapp.WhatsApp.shared/ChatStorage.sqlite` | macOS app container |
 | Contacts | `~/Library/Application Support/AddressBook/Sources/*/AddressBook-v22.abcddb` | macOS Address Book |
+
+---
+
+## Local LLM Alternative (Zero Cost)
+
+If you don't want to use Claude Code for compilation, `ingest_ollama.py` provides a local alternative using [Ollama](https://ollama.com). This runs entirely on your machine with no API costs.
+
+```bash
+# Install Ollama
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Pull a model
+ollama pull qwen3:8b
+
+# Run the local compiler
+python3 ingest_ollama.py --model qwen3:8b --date-range "last 30 days"
+
+# Process everything
+python3 ingest_ollama.py --model qwen3:8b --date-range all
+```
+
+**Tested models:**
+
+| Model | RAM Required | Quality | Speed |
+|-------|-------------|---------|-------|
+| `qwen3:8b` | 8GB | Good | Fast |
+| `qwen3:32b` | 24GB | Better | Moderate |
+| `llama3.3:70b` | 48GB | Best | Slow |
+| `gemma3:27b` | 20GB | Good | Moderate |
+
+The local compiler includes:
+- **Checkpoint mechanism**: every 15 entries, rebuilds the index, audits for cramming (too few new articles) and thinning (too many stubs)
+- **Backlinks tracking**: automatically builds `_backlinks.json` for reverse link navigation
+- **Absorb log**: tracks which entries have been processed (idempotent runs)
+- **Thinking tag extraction**: handles models that output `<think>` tags (like Qwen 3)
+
+**Trade-offs vs Claude Code:**
+- Local LLM produces shorter, less nuanced articles
+- No interactive commands (`/wiki query`, `/wiki cleanup`)
+- Better for scheduled automation (no API quota concerns)
+- Good for initial bulk processing; use Claude Code for refinement
+
+---
+
+## Cron Automation
+
+Instead of running commands manually, you can automate the wiki with cron jobs or launchd (macOS).
+
+### Linux / Generic (crontab)
+
+```bash
+# Edit crontab
+crontab -e
+
+# Sync Gmail + Calendar at 1:30 AM daily
+30 1 * * * cd /path/to/llm-wiki && python3 ingest_gmail.py --days 7 && python3 ingest_calendar.py --days 7
+
+# Compile wiki at 2:00 AM daily
+0 2 * * * cd /path/to/llm-wiki && python3 ingest_ollama.py --model qwen3:8b --date-range "last 7 days"
+
+# Full lint on Sundays at 3:00 AM
+0 3 * * 0 cd /path/to/llm-wiki && python3 ingest_ollama.py --model qwen3:8b --date-range all
+```
+
+### macOS (launchd)
+
+Create `~/Library/LaunchAgents/com.llmwiki.compile.plist`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.llmwiki.compile</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>/path/to/llm-wiki/ingest_ollama.py</string>
+        <string>--model</string>
+        <string>qwen3:8b</string>
+        <string>--date-range</string>
+        <string>last 7 days</string>
+    </array>
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>2</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>/tmp/llmwiki-compile.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/llmwiki-compile.err</string>
+</dict>
+</plist>
+```
+
+Load it:
+```bash
+launchctl load ~/Library/LaunchAgents/com.llmwiki.compile.plist
+```
+
+The automated workflow:
+1. **1:30 AM** -- Sync Gmail and Calendar (new entries land in `raw/entries/`)
+2. **2:00 AM** -- Compile new entries into wiki articles (local LLM, zero cost)
+3. **Sunday 3:00 AM** -- Full lint and quality audit
+4. **On demand** -- Use Claude Code for `/wiki query`, `/wiki cleanup`, or `/wiki breakdown`
 
 ---
 
