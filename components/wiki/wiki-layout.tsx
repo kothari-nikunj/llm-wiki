@@ -190,16 +190,6 @@ const MainContent = styled.main`
   }
 `;
 
-const CATEGORIES = [
-  { slug: 'companies', label: 'Companies' },
-  { slug: 'concepts', label: 'Concepts' },
-  { slug: 'eras', label: 'Eras' },
-  { slug: 'interests', label: 'Interests' },
-  { slug: 'patterns', label: 'Patterns' },
-  { slug: 'people', label: 'People' },
-  { slug: 'philosophies', label: 'Philosophies' },
-  { slug: 'strategies', label: 'Strategies' },
-];
 
 interface WikiLayoutProps {
   children: ReactNode;
@@ -220,15 +210,16 @@ export default function WikiLayout({ children, articles = [], isIndex }: WikiLay
     return match?.directory || '';
   }, [isIndex, currentSlug, articles]);
 
+  const dirs = useMemo(
+    () => [...new Set(articles.map((a) => a.directory))].sort(),
+    [articles]
+  );
+
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
     if (isIndex) {
-      // First category open, rest collapsed on index
-      return Object.fromEntries(CATEGORIES.map((c, i) => [c.slug, i !== 0]));
+      return Object.fromEntries(dirs.map((slug, i) => [slug, i !== 0]));
     }
-    // On article pages, collapse all except active category
-    return Object.fromEntries(
-      CATEGORIES.map((c) => [c.slug, c.slug !== activeDir])
-    );
+    return Object.fromEntries(dirs.map((slug) => [slug, slug !== activeDir]));
   });
 
   const filteredArticles = query
@@ -239,10 +230,11 @@ export default function WikiLayout({ children, articles = [], isIndex }: WikiLay
       )
     : articles;
 
-  const grouped = CATEGORIES.map((cat) => ({
-    ...cat,
+  const grouped = dirs.map((slug) => ({
+    slug,
+    label: slug.charAt(0).toUpperCase() + slug.slice(1),
     items: filteredArticles
-      .filter((a) => a.directory === cat.slug)
+      .filter((a) => a.directory === slug)
       .sort((a, b) => a.title.localeCompare(b.title)),
   })).filter((cat) => cat.items.length > 0);
 
